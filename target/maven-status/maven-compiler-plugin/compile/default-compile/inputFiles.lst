@@ -1,3 +1,5 @@
-/Users/krispian/Uni/bachelorarbeit/project/my-app/src/main/java/com/mycompany/app/TemperatureEvent.java
-/Users/krispian/Uni/bachelorarbeit/project/my-app/src/main/java/com/mycompany/app/Event.java
-/Users/krispian/Uni/bachelorarbeit/project/my-app/src/main/java/com/mycompany/app/App.java
+/Users/krispian/IdeaProjects/event-processing/src/main/java/com/mycompany/app/TemperatureEvent.java
+/Users/krispian/IdeaProjects/event-processing/src/main/java/com/mycompany/app/Event.java
+/Users/krispian/IdeaProjects/event-processing/src/main/java/com/mycompany/app/sources/Sensor.java
+/Users/krispian/IdeaProjects/event-processing/src/main/java/com/mycompany/app/StreamingJob.java
+/Users/krispian/IdeaProjects/event-processing/src/main/java/com/mycompany/app/sources/TemperatureSensor.java

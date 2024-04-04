@@ -1,5 +1,7 @@
 com/mycompany/app/Event.class
-com/mycompany/app/App$1.class
-com/mycompany/app/App$2.class
-com/mycompany/app/App.class
+com/mycompany/app/StreamingJob.class
+com/mycompany/app/sources/TemperatureSensor.class
+com/mycompany/app/StreamingJob$1.class
 com/mycompany/app/TemperatureEvent.class
+com/mycompany/app/sources/Sensor.class
+com/mycompany/app/StreamingJob$2.class

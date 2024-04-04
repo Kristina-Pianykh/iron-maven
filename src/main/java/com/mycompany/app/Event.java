@@ -1,6 +1,5 @@
 package com.mycompany.app;
 
-
 public class Event {
     public int number;
 
