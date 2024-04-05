@@ -1,6 +1,7 @@
 package com.mycompany.app;
 
 import com.mycompany.app.sources.AtomicEvent;
+import com.mycompany.app.sources.LocalSource;
 import com.mycompany.app.sources.SocketSource;
 import org.apache.flink.cep.CEP;
 import org.apache.flink.cep.PatternStream;
@@ -20,7 +21,7 @@ public class StreamingJob {
     public static void main(String[] args) throws Exception {
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-        DataStream<AtomicEvent> inputEventStream = env.addSource(new SocketSource(), "Temperature Sensor Stream");
+        DataStream<AtomicEvent> inputEventStream = env.addSource(new LocalSource(), "Local Source");
 
         // Define a pattern
         AfterMatchSkipStrategy skipStrategy = AfterMatchSkipStrategy.noSkip();
@@ -34,7 +35,7 @@ public class StreamingJob {
             public boolean filter(AtomicEvent atomicEvent) throws Exception {
                 return atomicEvent.getType().equals("C");
             }
-        }).within(Duration.ofSeconds(10));
+        });
 
         // Apply the pattern to the input stream
         PatternStream<AtomicEvent> patternStream = CEP.pattern(inputEventStream, pattern).inProcessingTime();
@@ -43,9 +44,10 @@ public class StreamingJob {
         DataStream<String> matches = patternStream.process(new PatternProcessFunction<AtomicEvent, String>() {
             @Override
             public void processMatch(Map<String, List<AtomicEvent>> matches, Context ctx, Collector<String> out) {
-                AtomicEvent first = matches.get("first").get(0);
-                AtomicEvent second = matches.get("second").get(0);
-                out.collect("SEQ(A, C) detected: " + first.getType() + ", " + second.getType());
+                out.collect(matches.toString());
+//                AtomicEvent first = matches.get("first").get(0);
+//                AtomicEvent second = matches.get("second").get(0);
+//                out.collect("SEQ(A, C) detected: " + first.getType() + ", " + second.getType());
             }
         });
 
