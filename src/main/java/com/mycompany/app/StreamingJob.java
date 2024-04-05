@@ -1,7 +1,7 @@
 package com.mycompany.app;
 
 import com.mycompany.app.sources.AtomicEvent;
-import com.mycompany.app.sources.EventBroker;
+import com.mycompany.app.sources.SocketSource;
 import org.apache.flink.cep.CEP;
 import org.apache.flink.cep.PatternStream;
 import org.apache.flink.cep.functions.PatternProcessFunction;
@@ -20,11 +20,11 @@ public class StreamingJob {
     public static void main(String[] args) throws Exception {
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-        DataStream<AtomicEvent> inputEventStream = env.addSource(new EventBroker(), "Temperature Sensor Stream");
+        DataStream<AtomicEvent> inputEventStream = env.addSource(new SocketSource(), "Temperature Sensor Stream");
 
         // Define a pattern
         AfterMatchSkipStrategy skipStrategy = AfterMatchSkipStrategy.noSkip();
-        Pattern<AtomicEvent, ?> projection = Pattern.<AtomicEvent>begin("first", skipStrategy).where(new SimpleCondition<AtomicEvent>() {
+        Pattern<AtomicEvent, ?> pattern = Pattern.<AtomicEvent>begin("first", skipStrategy).where(new SimpleCondition<AtomicEvent>() {
             @Override
             public boolean filter(AtomicEvent atomicEvent) throws Exception {
                 return atomicEvent.getType().equals("A");
@@ -37,14 +37,14 @@ public class StreamingJob {
         }).within(Duration.ofSeconds(10));
 
         // Apply the pattern to the input stream
-        PatternStream<AtomicEvent> patternStream = CEP.pattern(inputEventStream, projection).inProcessingTime();
+        PatternStream<AtomicEvent> patternStream = CEP.pattern(inputEventStream, pattern).inProcessingTime();
 
         // Select matching patterns and print them
         DataStream<String> matches = patternStream.process(new PatternProcessFunction<AtomicEvent, String>() {
             @Override
-            public void processMatch(Map<String, List<AtomicEvent>> pattern, Context ctx, Collector<String> out) {
-                AtomicEvent first = pattern.get("first").get(0);
-                AtomicEvent second = pattern.get("second").get(0);
+            public void processMatch(Map<String, List<AtomicEvent>> matches, Context ctx, Collector<String> out) {
+                AtomicEvent first = matches.get("first").get(0);
+                AtomicEvent second = matches.get("second").get(0);
                 out.collect("SEQ(A, C) detected: " + first.getType() + ", " + second.getType());
             }
         });
