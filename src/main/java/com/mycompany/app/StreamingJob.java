@@ -1,17 +1,18 @@
 package com.mycompany.app;
 
-import org.apache.flink.streaming.api.TimeCharacteristic;
-import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import com.mycompany.app.sources.AtomicEvent;
+import com.mycompany.app.sources.EventBroker;
 import org.apache.flink.cep.CEP;
 import org.apache.flink.cep.PatternStream;
+import org.apache.flink.cep.functions.PatternProcessFunction;
+import org.apache.flink.cep.nfa.aftermatch.AfterMatchSkipStrategy;
 import org.apache.flink.cep.pattern.Pattern;
 import org.apache.flink.cep.pattern.conditions.SimpleCondition;
-// import org.apache.flink.cep.functions.PatternProcessFunction;
-// import org.apache.flink.util.Collector;
-import com.mycompany.app.sources.TemperatureSensor;
-import com.mycompany.app.sources.Sensor;
+import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.util.Collector;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -19,50 +20,37 @@ public class StreamingJob {
     public static void main(String[] args) throws Exception {
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-        // Example input stream of temperature events
-        //DataStream<TemperatureEvent> inputEventStream = env.fromData(
-        //        new TemperatureEvent("sensor1", 95.0),
-        //        new TemperatureEvent("sensor1", 105.0),
-        //        new TemperatureEvent("sensor1", 110.0),
-        //        new TemperatureEvent("sensor2", 99.0),
-        //        new TemperatureEvent("sensor2", 101.0)
-        //);
-        DataStream<Sensor> inputEventStream = env.addSource(new TemperatureSensor(), "Temperature Sensor Stream");
+        DataStream<AtomicEvent> inputEventStream = env.addSource(new EventBroker(), "Temperature Sensor Stream");
 
         // Define a pattern
-        Pattern<Sensor, ?> warningPattern = Pattern.<Sensor>begin("first")
-                .where(new SimpleCondition<Sensor>() {
-                    @Override
-                    public boolean filter(Sensor value) throws Exception {
-                        return value.getTemperature() > 100;
-                    }
-                })
-                .next("second")
-                .where(new SimpleCondition<Sensor>() {
-                    @Override
-                    public boolean filter(Sensor value) throws Exception {
-                        return value.getTemperature() > 100;
-                    }
-                });
+        AfterMatchSkipStrategy skipStrategy = AfterMatchSkipStrategy.noSkip();
+        Pattern<AtomicEvent, ?> projection = Pattern.<AtomicEvent>begin("first", skipStrategy).where(new SimpleCondition<AtomicEvent>() {
+            @Override
+            public boolean filter(AtomicEvent atomicEvent) throws Exception {
+                return atomicEvent.getType().equals("A");
+            }
+        }).followedByAny("second").where(new SimpleCondition<AtomicEvent>() {
+            @Override
+            public boolean filter(AtomicEvent atomicEvent) throws Exception {
+                return atomicEvent.getType().equals("C");
+            }
+        }).within(Duration.ofSeconds(10));
 
         // Apply the pattern to the input stream
-        PatternStream<Sensor> patternStream = CEP.pattern(inputEventStream.keyBy(Sensor::getDeviceId), warningPattern).inProcessingTime();
+        PatternStream<AtomicEvent> patternStream = CEP.pattern(inputEventStream, projection).inProcessingTime();
 
         // Select matching patterns and print them
-        DataStream<String> alerts = patternStream.select(
-                (Map<String, List<Sensor>> pattern) -> {
-                    Sensor firstEvent = pattern.get("first").get(0);
-                    Sensor secondEvent = pattern.get("second").get(0);
-                    return String.format("Temperature warning: %d: %f, %d: %f", firstEvent.getDeviceId(), firstEvent.getTemperature(),
-                            secondEvent.getDeviceId(), secondEvent.getTemperature()
-                    );
-                    // return firstEvent.getDeviceId() + ": " +
-                    //         firstEvent.getTemperature() + ", " + secondEvent.getDeviceId() + ": " + secondEvent.getTemperature();
-                }
-        );
+        DataStream<String> matches = patternStream.process(new PatternProcessFunction<AtomicEvent, String>() {
+            @Override
+            public void processMatch(Map<String, List<AtomicEvent>> pattern, Context ctx, Collector<String> out) {
+                AtomicEvent first = pattern.get("first").get(0);
+                AtomicEvent second = pattern.get("second").get(0);
+                out.collect("SEQ(A, C) detected: " + first.getType() + ", " + second.getType());
+            }
+        });
 
-        alerts.print();
+        matches.print();
 
-        env.execute("Temperature Monitoring");
+        env.execute("CEP Pattern Matching Job");
     }
 }
