@@ -1,4 +1,4 @@
-package com.mycompany.app.sources;
+package iron_maven.sources;
 
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction;
 
@@ -20,15 +20,9 @@ public class SocketSource extends RichSourceFunction<AtomicEvent> {
           String.format("Server started. Listening for connections on port %d...", port));
 
       while (true) {
-        //            final ThreadLocalRandom random = ThreadLocalRandom.current();
-        //            long timestamp = System.currentTimeMillis();
-        //            String[] eventTypes = new String[]{"A", "C", "E", "G", "I"};
-        //            AtomicEvent atomicEvent = new AtomicEvent(eventTypes[random.nextInt(0, 5)]);
-
         Socket socket = serverSocket.accept();
         new ClientHandler(socket, sourceContext).start(); // Hand off to a new thread
-
-        Thread.sleep(1000); // 1000 comes from Flink lib
+        //        Thread.sleep(1000); // 1000 comes from Flink lib
       }
     } catch (IOException e) {
       e.printStackTrace(); // TODO: handle exception

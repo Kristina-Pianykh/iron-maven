@@ -1,4 +1,4 @@
-package com.mycompany.app.sources;
+package iron_maven.sources;
 
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction;

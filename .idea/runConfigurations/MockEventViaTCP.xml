@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="MockEventViaTCP" type="Application" factoryName="Application">
-    <option name="MAIN_CLASS_NAME" value="com.mycompany.app.MockEventGenerator" />
+    <option name="MAIN_CLASS_NAME" value="iron_maven.MockEventGenerator" />
     <module name="my-app" />
     <method v="2">
       <option name="Make" enabled="true" />

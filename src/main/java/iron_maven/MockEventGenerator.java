@@ -1,4 +1,4 @@
-package com.mycompany.app;
+package iron_maven;
 
 import java.io.*;
 import java.net.*;
