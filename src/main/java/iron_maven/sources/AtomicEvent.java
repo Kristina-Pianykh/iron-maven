@@ -8,7 +8,8 @@ public class AtomicEvent {
 
   public AtomicEvent(String type) {
     this.type = type;
-    this.timestamp = Instant.now().getEpochSecond();
+    //    this.timestamp = System.currentTimeMillis() % 1000; // milliseconds
+    this.timestamp = Instant.now().toEpochMilli();
   }
 
   public String getType() {

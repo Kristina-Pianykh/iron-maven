@@ -38,7 +38,7 @@ public class MockEventGenerator {
               socketOutputStream.writeUTF(message); // Send message to server
 
               final ThreadLocalRandom random = ThreadLocalRandom.current();
-              int delay = random.nextInt(800, 3000);
+              int delay = random.nextInt(5000, 1000);
               Thread.sleep(delay); // simulate a delay
 
             } catch (IOException e) {

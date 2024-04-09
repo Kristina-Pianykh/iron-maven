@@ -19,7 +19,9 @@ public class StreamingJob {
   public static void main(String[] args) throws Exception {
     final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-    DataStream<AtomicEvent> inputEventStream = env.addSource(new SocketSource(), "Socket Source");
+    DataStream<AtomicEvent> inputEventStream =
+        env.addSource(new SocketSource(), "Socket Source")
+            .assignTimestampsAndWatermarks(new CustomWatermarkStrategy());
 
     // Define a pattern
     AfterMatchSkipStrategy skipStrategy = AfterMatchSkipStrategy.noSkip();
@@ -42,8 +44,7 @@ public class StreamingJob {
                 });
 
     // Apply the pattern to the input stream
-    PatternStream<AtomicEvent> patternStream =
-        CEP.pattern(inputEventStream, pattern).inProcessingTime();
+    PatternStream<AtomicEvent> patternStream = CEP.pattern(inputEventStream, pattern).inEventTime();
 
     // Select matching patterns and print them
     DataStream<String> matches =
