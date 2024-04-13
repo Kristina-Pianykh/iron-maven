@@ -13,6 +13,10 @@ public class SocketSource extends RichSourceFunction<AtomicEvent> {
   private String hostname = "localhost";
   private int port = 6666;
 
+  public SocketSource(int port) {
+    this.port = port;
+  }
+
   @Override
   public void run(SourceContext<AtomicEvent> sourceContext) throws Exception {
     try (ServerSocket serverSocket = new ServerSocket(port)) {
