@@ -2,13 +2,19 @@ package iron_maven;
 
 import iron_maven.sources.AtomicEvent;
 import iron_maven.sources.SocketSource;
+import java.io.*;
+import java.net.*;
+
+import org.apache.flink.api.common.serialization.SerializationSchema;
 import org.apache.flink.cep.CEP;
 import org.apache.flink.cep.PatternSelectFunction;
+import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
+import org.apache.flink.cep.PatternFlatSelectFunction;
 import org.apache.flink.cep.PatternStream;
-import org.apache.flink.cep.functions.PatternProcessFunction;
 import org.apache.flink.cep.pattern.Pattern;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.util.Collector;
 
 import java.util.ArrayList;
@@ -16,19 +22,28 @@ import java.util.List;
 import java.util.Map;
 
 public class StreamingJob {
+  public static final String HOSTNAME = "localhost";
 
   public static void main(String[] args) throws Exception {
+    int targetPort = -1;
+
     int patternNum = Niceties.extractPatternNum(args, 0);
     assert patternNum >= 1 : "Pattern number must be a positive integer";
     System.out.println("Selected pattern: " + patternNum);
 
-    int port = Niceties.extractPort(args, 1);
-    assert port > 0 : "Port is not set";
+    int hostPort = Niceties.extractPort(args, 1);
+    assert hostPort > 0 : "Host Port is not set";
+
+    if (args.length >= 3) {
+      targetPort = Niceties.extractPort(args, 2);
+      System.out.println("Target port is set to " + targetPort);
+    }
+    //    assert targetPort > 0 : "Target Port is not set";
 
     final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
     DataStream<AtomicEvent> inputEventStream =
-        env.addSource(new SocketSource(port), "Socket Source")
+        env.addSource(new SocketSource(hostPort), "Socket Source")
             .assignTimestampsAndWatermarks(new CustomWatermarkStrategy());
 
     Pattern<AtomicEvent, ?> pattern = CustomPatterns.getPattern(patternNum);
@@ -55,21 +70,51 @@ public class StreamingJob {
     //    matches.print();
 
     // this is stupid. Just to convert PatternStream into DataStream
-    DataStream<List<AtomicEvent>> matches =
-        patternStream.select(
-            new PatternSelectFunction<AtomicEvent, List<AtomicEvent>>() {
+    DataStream<String> matches =
+        patternStream.flatSelect(
+            new PatternFlatSelectFunction<AtomicEvent, String>() {
               @Override
-              public List<AtomicEvent> select(Map<String, List<AtomicEvent>> pattern) {
-                AtomicEvent first = pattern.get("first").get(0);
-                AtomicEvent second = pattern.get("second").get(0);
-                List<AtomicEvent> partialMatches = new ArrayList<>();
-                partialMatches.add(first);
-                partialMatches.add(second);
-                return partialMatches;
+              public void flatSelect(
+                  Map<String, List<AtomicEvent>> map, Collector<String> collector)
+                  throws Exception {
+                for (List<AtomicEvent> list : map.values()) {
+                  for (AtomicEvent event : list) {
+                    collector.collect(event.getType());
+                    System.out.println("sent to the collector: " + event.getType());
+                  }
+                }
               }
             });
-    matches.writeToSocket(); // TODO: implement
-
+    //    DataStream<List<AtomicEvent>> matches =
+    //        patternStream.select(
+    //            new PatternSelectFunction<AtomicEvent, List<AtomicEvent>>() {
+    //              @Override
+    //              public List<AtomicEvent> select(Map<String, List<AtomicEvent>> pattern)
+    // {
+    //                AtomicEvent first = pattern.get("first").get(0);
+    //                AtomicEvent second = pattern.get("second").get(0);
+    //                List<AtomicEvent> partialMatches = new ArrayList<>();
+    //                partialMatches.add(first);
+    //                partialMatches.add(second);
+    //                return partialMatches;
+    //              }
+    //            });
+    System.out.println("target port is set to " + targetPort);
+    if (targetPort > 0) {
+      System.out.printf("flushing matches of SEQ(A,C) to port %d\n", targetPort);
+      int finalTargetPort = targetPort;
+      matches.addSink(
+          new RichSinkFunction<String>() {
+            @Override
+            public void invoke(String value, Context context) throws Exception {
+              Socket socket = new Socket(HOSTNAME, finalTargetPort);
+              DataOutputStream socketOutputStream = new DataOutputStream(socket.getOutputStream());
+              socketOutputStream.writeUTF(value); // Send message to server
+              socketOutputStream.flush();
+              System.out.println("sent to the socket: " + value);
+            }
+          });
+    }
     env.execute("CEP Pattern Matching Job");
   }
 }

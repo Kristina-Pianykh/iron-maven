@@ -1,16 +1,10 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="StreamingJob1" type="Application" factoryName="Application">
+  <configuration default="false" name="StreamingJobADC" type="Application" factoryName="Application">
     <option name="INCLUDE_PROVIDED_SCOPE" value="true" />
     <option name="MAIN_CLASS_NAME" value="iron_maven.StreamingJob" />
     <module name="my-app" />
-    <option name="PROGRAM_PARAMETERS" value="1 6666" />
+    <option name="PROGRAM_PARAMETERS" value="1 6667" />
     <option name="VM_PARAMETERS" value="-ea --add-opens java.base/java.util=ALL-UNNAMED" />
-    <extension name="coverage">
-      <pattern>
-        <option name="PATTERN" value="com.mycompany.app.*" />
-        <option name="ENABLED" value="true" />
-      </pattern>
-    </extension>
     <method v="2">
       <option name="Make" enabled="true" />
     </method>
