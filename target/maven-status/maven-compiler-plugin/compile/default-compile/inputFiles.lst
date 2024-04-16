@@ -1,6 +1,10 @@
-/Users/krispian/IdeaProjects/event-processing/src/main/java/com/mycompany/app/MockEventGenerator.java
-/Users/krispian/IdeaProjects/event-processing/src/main/java/com/mycompany/app/sources/AtomicEvent.java
-/Users/krispian/IdeaProjects/event-processing/src/main/java/com/mycompany/app/sources/SocketSource.java
-/Users/krispian/IdeaProjects/event-processing/src/main/java/com/mycompany/app/sources/Sensor.java
-/Users/krispian/IdeaProjects/event-processing/src/main/java/com/mycompany/app/StreamingJob.java
-/Users/krispian/IdeaProjects/event-processing/src/main/java/com/mycompany/app/sources/TemperatureSensor.java
+/Users/krispian/IdeaProjects/event-processing/src/main/java/iron_maven/StreamingJob.java
+/Users/krispian/IdeaProjects/event-processing/src/main/java/iron_maven/CustomPatterns.java
+/Users/krispian/IdeaProjects/event-processing/src/main/java/iron_maven/MockEventGenerator.java
+/Users/krispian/IdeaProjects/event-processing/src/main/java/iron_maven/Niceties.java
+/Users/krispian/IdeaProjects/event-processing/src/main/java/iron_maven/SocketSource.java
+/Users/krispian/IdeaProjects/event-processing/src/main/java/iron_maven/LocalSource.java
+/Users/krispian/IdeaProjects/event-processing/src/main/java/iron_maven/sources/EventID.java
+/Users/krispian/IdeaProjects/event-processing/src/main/java/iron_maven/SocketSink.java
+/Users/krispian/IdeaProjects/event-processing/src/main/java/iron_maven/CustomWatermarkStrategy.java
+/Users/krispian/IdeaProjects/event-processing/src/main/java/iron_maven/sources/AtomicEvent.java
