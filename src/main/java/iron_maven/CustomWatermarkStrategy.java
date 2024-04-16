@@ -8,13 +8,13 @@ import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 public class CustomWatermarkStrategy implements WatermarkStrategy<AtomicEvent> {
-  private static final long MAX_OUT_OF_ORDERNESS = 0;
+  private static final long MAX_OUT_OF_ORDERNESS = 800;
 
   @Override
   public WatermarkGenerator<AtomicEvent> createWatermarkGenerator(
       WatermarkGeneratorSupplier.Context context) {
-    //    return new CustomWatermarkGenerator();
-    return new CustomBoundedOutOfOrderWatermark<>(Duration.ofMillis(300));
+    return new CustomWatermarkGenerator();
+    //    return new CustomBoundedOutOfOrderWatermark<>(Duration.ofMillis(300));
   }
 
   @Override
@@ -26,8 +26,6 @@ public class CustomWatermarkStrategy implements WatermarkStrategy<AtomicEvent> {
   public static class CustomTimestampAssigner implements TimestampAssigner<AtomicEvent> {
     @Override
     public long extractTimestamp(AtomicEvent element, long recordTimestamp) {
-      //      System.out.println("Extracting timestamp from " + element.toString());
-      //      System.out.println("Timestamp: " + element.getTimestamp());
       return element.getTimestamp();
     }
   }
@@ -37,7 +35,11 @@ public class CustomWatermarkStrategy implements WatermarkStrategy<AtomicEvent> {
     public void onEvent(AtomicEvent event, long eventTimestamp, WatermarkOutput output) {
       //      System.out.println("Event: " + event.toString());
       //      System.out.println("Event timestamp: " + eventTimestamp);
-      output.emitWatermark(new Watermark(eventTimestamp));
+
+      // emit a watermark on event to allow to match only events that arrived MAX_OUT_OF_ORDERNESS
+      // before
+      output.emitWatermark(new Watermark(System.currentTimeMillis() - MAX_OUT_OF_ORDERNESS));
+      //      output.emitWatermark(new Watermark(eventTimestamp));
     }
 
     @Override
