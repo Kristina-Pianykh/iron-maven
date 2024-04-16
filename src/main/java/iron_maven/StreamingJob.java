@@ -69,14 +69,18 @@ public class StreamingJob {
               public void flatSelect(
                   Map<String, List<AtomicEvent>> map, Collector<AtomicEvent> collector)
                   throws Exception {
-                for (List<AtomicEvent> list : map.values()) {
-                  for (AtomicEvent event : list) {
+                System.out.println("\n======================================");
+                for (String key : map.keySet()) {
+                  List<AtomicEvent> values = map.get(key);
+                  System.out.println(key + ": " + values);
+                  for (AtomicEvent event : values) {
                     collector.collect(event);
                   }
                 }
+                System.out.println("======================================\n");
               }
             });
-    matches.print();
+    //    matches.print();
     //    DataStream<List<AtomicEvent>> matches =
     //        patternStream.select(
     //            new PatternSelectFunction<AtomicEvent, List<AtomicEvent>>() {
@@ -93,7 +97,6 @@ public class StreamingJob {
     //            });
     System.out.println("target port is set to " + targetPort);
     if (targetPort > 0) {
-      System.out.printf("flushing matches of SEQ(A,C) to port %d\n", targetPort);
       matches.addSink(new SocketSink(HOSTNAME, targetPort));
     }
     env.execute("CEP Pattern Matching Job");
