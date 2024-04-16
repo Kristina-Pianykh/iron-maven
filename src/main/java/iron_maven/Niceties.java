@@ -3,6 +3,7 @@ package iron_maven;
 import org.apache.flink.cep.nfa.aftermatch.AfterMatchSkipStrategy;
 import org.apache.flink.cep.pattern.Pattern;
 import org.apache.flink.cep.pattern.conditions.SimpleCondition;
+import iron_maven.sources.AtomicEvent;
 
 public class Niceties {
 

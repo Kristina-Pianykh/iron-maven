@@ -13,7 +13,8 @@ public class LocalSource extends RichSourceFunction<AtomicEvent> {
     while (running) {
       final ThreadLocalRandom random = ThreadLocalRandom.current();
       String randomEvent = EVENT_TYPES[random.nextInt(0, 5)];
-      AtomicEvent atomicEvent = new AtomicEvent(randomEvent);
+      AtomicEvent atomicEvent =
+          new AtomicEvent(randomEvent, "0"); // dummy nodenUm, ignore the script
       System.out.println(atomicEvent.toString());
 
       // put generated sensor data to the queue

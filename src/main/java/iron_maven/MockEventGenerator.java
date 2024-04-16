@@ -29,7 +29,7 @@ public class MockEventGenerator {
       System.exit(1);
     }
     int randomIndex = (int) (Math.random() * eventTypes.length);
-    return new AtomicEvent(eventTypes[randomIndex]);
+    return new AtomicEvent(eventTypes[randomIndex], String.valueOf(nodeNum));
   }
 
   public static void main(String[] args) {

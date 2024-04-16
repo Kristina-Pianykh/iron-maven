@@ -12,9 +12,11 @@ import org.apache.flink.util.Collector;
 
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
 
 public class StreamingJob {
   public static final String HOSTNAME = "localhost";
+  public static HashSet<Integer> processedMatches = new HashSet<>();
 
   public static void main(String[] args) throws Exception {
     int targetPort = -1;
@@ -74,7 +76,12 @@ public class StreamingJob {
                   List<AtomicEvent> values = map.get(key);
                   System.out.println(key + ": " + values);
                   for (AtomicEvent event : values) {
-                    collector.collect(event);
+                    Integer hashedEvent = event.hashCode();
+                    if (!processedMatches.contains(hashedEvent)) {
+                      System.out.println("Sending event: " + event.toString());
+                      processedMatches.add(hashedEvent);
+                      collector.collect(event);
+                    }
                   }
                 }
                 System.out.println("======================================\n");
