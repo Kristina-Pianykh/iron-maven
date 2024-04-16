@@ -1,7 +1,5 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Main+MockEventViaTCP" type="CompoundRunConfigurationType">
-    <toRun name="MockEventViaTCP" type="Application" />
-    <toRun name="iron_maven.StreamingJob" type="Application" />
     <method v="2" />
   </configuration>
 </component>

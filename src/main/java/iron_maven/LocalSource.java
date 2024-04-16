@@ -1,6 +1,7 @@
-package iron_maven.sources;
+package iron_maven;
 
 import java.util.concurrent.ThreadLocalRandom;
+import iron_maven.sources.AtomicEvent;
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction;
 
 public class LocalSource extends RichSourceFunction<AtomicEvent> {

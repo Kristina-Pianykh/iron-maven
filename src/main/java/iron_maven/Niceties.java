@@ -26,4 +26,17 @@ public class Niceties {
     }
     return port;
   }
+
+  public static int extractNodeNum(String[] args, int idx) {
+    assert args.length > 0 : "Specify at least one argument";
+    int nodeNum = -1;
+
+    try {
+      nodeNum = Integer.parseInt(args[idx]);
+    } catch (NumberFormatException e) {
+      e.printStackTrace();
+      System.exit(-1);
+    }
+    return nodeNum;
+  }
 }

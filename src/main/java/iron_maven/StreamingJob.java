@@ -1,23 +1,15 @@
 package iron_maven;
 
 import iron_maven.sources.AtomicEvent;
-import iron_maven.sources.SocketSource;
-import java.io.*;
-import java.net.*;
 
-import org.apache.flink.api.common.serialization.SerializationSchema;
 import org.apache.flink.cep.CEP;
-import org.apache.flink.cep.PatternSelectFunction;
-import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.apache.flink.cep.PatternFlatSelectFunction;
 import org.apache.flink.cep.PatternStream;
 import org.apache.flink.cep.pattern.Pattern;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.util.Collector;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -70,21 +62,21 @@ public class StreamingJob {
     //    matches.print();
 
     // this is stupid. Just to convert PatternStream into DataStream
-    DataStream<String> matches =
+    DataStream<AtomicEvent> matches =
         patternStream.flatSelect(
-            new PatternFlatSelectFunction<AtomicEvent, String>() {
+            new PatternFlatSelectFunction<AtomicEvent, AtomicEvent>() {
               @Override
               public void flatSelect(
-                  Map<String, List<AtomicEvent>> map, Collector<String> collector)
+                  Map<String, List<AtomicEvent>> map, Collector<AtomicEvent> collector)
                   throws Exception {
                 for (List<AtomicEvent> list : map.values()) {
                   for (AtomicEvent event : list) {
-                    collector.collect(event.getType());
-                    System.out.println("sent to the collector: " + event.getType());
+                    collector.collect(event);
                   }
                 }
               }
             });
+    matches.print();
     //    DataStream<List<AtomicEvent>> matches =
     //        patternStream.select(
     //            new PatternSelectFunction<AtomicEvent, List<AtomicEvent>>() {
@@ -102,18 +94,7 @@ public class StreamingJob {
     System.out.println("target port is set to " + targetPort);
     if (targetPort > 0) {
       System.out.printf("flushing matches of SEQ(A,C) to port %d\n", targetPort);
-      int finalTargetPort = targetPort;
-      matches.addSink(
-          new RichSinkFunction<String>() {
-            @Override
-            public void invoke(String value, Context context) throws Exception {
-              Socket socket = new Socket(HOSTNAME, finalTargetPort);
-              DataOutputStream socketOutputStream = new DataOutputStream(socket.getOutputStream());
-              socketOutputStream.writeUTF(value); // Send message to server
-              socketOutputStream.flush();
-              System.out.println("sent to the socket: " + value);
-            }
-          });
+      matches.addSink(new SocketSink(HOSTNAME, targetPort));
     }
     env.execute("CEP Pattern Matching Job");
   }

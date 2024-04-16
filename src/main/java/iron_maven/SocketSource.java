@@ -1,13 +1,10 @@
-package iron_maven.sources;
+package iron_maven;
 
+import iron_maven.sources.AtomicEvent;
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
+import java.io.*;
+import java.net.*;
 
 public class SocketSource extends RichSourceFunction<AtomicEvent> {
   private String hostname = "localhost";
@@ -30,6 +27,7 @@ public class SocketSource extends RichSourceFunction<AtomicEvent> {
       }
     } catch (IOException e) {
       e.printStackTrace(); // TODO: handle exception
+      System.exit(1);
     }
   }
 
@@ -48,14 +46,15 @@ public class SocketSource extends RichSourceFunction<AtomicEvent> {
     @Override
     public void run() {
       try {
-        DataInputStream socketInputStream = new DataInputStream(socket.getInputStream());
-        String message = socketInputStream.readUTF(); // TODO: how to read??
-        AtomicEvent event = new AtomicEvent(message);
+        InputStream inputStream = socket.getInputStream();
+        ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
+        AtomicEvent event = (AtomicEvent) objectInputStream.readObject();
+        System.out.println("Receved event: " + event);
 
-        LocalTime now = LocalTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-        String formattedTime = now.format(formatter);
-        System.out.println("[" + formattedTime + "] " + event.toString());
+        //        LocalTime now = LocalTime.now();
+        //        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        //        String formattedTime = now.format(formatter);
+        //        System.out.println("[" + formattedTime + "] " + event.toString());
 
         // put generated sensor data to the queue
         sourceContext.collect(event);
@@ -63,6 +62,9 @@ public class SocketSource extends RichSourceFunction<AtomicEvent> {
         socket.close(); // Close connection
       } catch (IOException e) {
         e.printStackTrace(); // TODO: handle exception
+        System.exit(1);
+      } catch (ClassNotFoundException e) {
+        throw new RuntimeException(e);
       }
     }
   }
