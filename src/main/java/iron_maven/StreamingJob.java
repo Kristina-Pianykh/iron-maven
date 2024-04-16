@@ -102,7 +102,6 @@ public class StreamingJob {
     //                return partialMatches;
     //              }
     //            });
-    System.out.println("target port is set to " + targetPort);
     if (targetPort > 0) {
       matches.addSink(new SocketSink(HOSTNAME, targetPort));
     }
