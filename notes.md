@@ -56,3 +56,10 @@
 - due to network latencies, higher risk of accummulating transmission costs until updates are propagates through the network and a repair is initiaded
 - because of high latencies, the atomicity of a transaction (i.e. rapair) is jeopardized. Between the acks and the commit message a broker that has already agreed to commit can become overloaded by the increasing influx of incoming events. This can lead to a situation where the broker is unable to commit the transaction (atomicity is violated), which can result in data loss and unexpected system behavior.
 - because of the complex nature of implementation, debugging can be challenging
+
+
+# Coceptualization
+
+## Transition Stage
+
+![alt text](./docs/transition_phase.drawio.png)
