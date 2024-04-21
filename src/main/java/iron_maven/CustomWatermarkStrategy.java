@@ -1,14 +1,17 @@
 package iron_maven;
 
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import iron_maven.sources.AtomicEvent;
 import org.apache.flink.api.common.eventtime.*;
 
 import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.apache.flink.util.Preconditions.checkNotNull;
+import java.util.Date;
+import java.text.SimpleDateFormat;
 
 public class CustomWatermarkStrategy implements WatermarkStrategy<AtomicEvent> {
-  private static final long MAX_OUT_OF_ORDERNESS = 800;
+  private static final long MAX_OUT_OF_ORDERNESS = 1000;
 
   @Override
   public WatermarkGenerator<AtomicEvent> createWatermarkGenerator(
@@ -38,7 +41,11 @@ public class CustomWatermarkStrategy implements WatermarkStrategy<AtomicEvent> {
 
       // emit a watermark on event to allow to match only events that arrived MAX_OUT_OF_ORDERNESS
       // before
-      output.emitWatermark(new Watermark(System.currentTimeMillis() - MAX_OUT_OF_ORDERNESS));
+      //      long watermark = System.currentTimeMillis() - MAX_OUT_OF_ORDERNESS;
+      long watermark = System.currentTimeMillis();
+      //      System.out.println("Emitting on event watermark: " +
+      // Niceties.timestampToString(watermark));
+      output.emitWatermark(new Watermark(watermark));
       //      output.emitWatermark(new Watermark(eventTimestamp));
     }
 

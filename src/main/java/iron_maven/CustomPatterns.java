@@ -4,9 +4,11 @@ import iron_maven.sources.AtomicEvent;
 import org.apache.flink.cep.nfa.aftermatch.AfterMatchSkipStrategy;
 import org.apache.flink.cep.pattern.Pattern;
 import org.apache.flink.cep.pattern.conditions.SimpleCondition;
+import org.apache.flink.streaming.api.windowing.time.Time;
 
 public class CustomPatterns {
   static AfterMatchSkipStrategy skipStrategy = AfterMatchSkipStrategy.noSkip();
+  static Time timeWindowSize = Time.milliseconds(4000);
 
   public static Pattern<AtomicEvent, ?> getPattern(int patternNum) {
     switch (patternNum) {
@@ -35,7 +37,8 @@ public class CustomPatterns {
                   public boolean filter(AtomicEvent atomicEvent) throws Exception {
                     return atomicEvent.getType().equals("C");
                   }
-                });
+                })
+            .within(timeWindowSize);
     return pattern;
   }
 
@@ -64,7 +67,8 @@ public class CustomPatterns {
                   public boolean filter(AtomicEvent atomicEvent) throws Exception {
                     return atomicEvent.getType().equals("C");
                   }
-                });
+                })
+            .within(timeWindowSize);
     return pattern;
   }
 }
