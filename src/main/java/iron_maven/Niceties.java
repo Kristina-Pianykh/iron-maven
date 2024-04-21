@@ -5,6 +5,9 @@ import org.apache.flink.cep.pattern.Pattern;
 import org.apache.flink.cep.pattern.conditions.SimpleCondition;
 import iron_maven.sources.AtomicEvent;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 public class Niceties {
 
   public static int extractPatternNum(String[] args, int idx) {
@@ -43,6 +46,13 @@ public class Niceties {
       System.exit(-1);
     }
     return nodeNum;
+  }
+
+  public static String timestampToString(long timestamp) {
+    //    SimpleDateFormat formatter = new SimpleDateFormat("MMM dd,yyyy HH:mm:ss.SS");
+    SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss.SS");
+    Date resultdate = new Date(timestamp);
+    return "[" + formatter.format(resultdate) + "] ";
   }
 
   public static class CustomPatterns {
