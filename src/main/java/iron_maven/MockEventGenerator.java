@@ -1,16 +1,11 @@
 package iron_maven;
 
 import iron_maven.sources.AtomicEvent;
-import org.apache.flink.cep.PatternFlatSelectFunction;
 
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.io.*;
 import java.net.*;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class MockEventGenerator {
@@ -38,8 +33,8 @@ public class MockEventGenerator {
 
   public static void createRandomEventStream(String[] args) {
     int poolSize = 40;
-    int port = Niceties.extractPort(args, 0);
-    int nodeNum = Niceties.extractNodeNum(args, 1);
+    int nodeNum = Niceties.extractNodeNum(args, 0);
+    int port = Niceties.extractPort(args, 1);
     System.out.printf("Sending events to node %d on port %d\n", nodeNum, port);
     // wait 3 sec for the cep engine to start
     try {
@@ -87,26 +82,20 @@ public class MockEventGenerator {
     }
 
     for (int port : ports) {
-      try (Socket socket = new Socket(hostname, port)) {
-        MultiPortSender sender = new MultiPortSender(hostname, port, socket, nodeID);
-        sender.start();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
+      PortSender sender = new PortSender(hostname, port, nodeID);
+      sender.start();
     }
   }
 
-  private static class MultiPortSender extends Thread {
+  private static class PortSender extends Thread {
     String hostname;
     int nodeID;
     int port;
-    Socket socket;
 
-    public MultiPortSender(String hostname, int port, Socket socket, int nodeID) {
+    public PortSender(String hostname, int port, int nodeID) {
       this.hostname = hostname;
       this.port = port;
       this.nodeID = nodeID;
-      this.socket = socket;
     }
 
     @Override
@@ -138,27 +127,35 @@ public class MockEventGenerator {
       }
 
       int i = 0;
+      try (Socket socket = new Socket(this.hostname, this.port)) {
 
-      while (i < delays.length) {
-        try {
+        while (i < delays.length) {
+
           ObjectOutputStream socketOutputStream = new ObjectOutputStream(socket.getOutputStream());
           AtomicEvent event = new AtomicEvent(eventTypes[i], String.valueOf(nodeID));
+          System.out.println(event);
           socketOutputStream.writeObject(event); // Send message to server
-        } catch (IOException e) {
-          throw new RuntimeException(e);
+
+          try {
+            Thread.sleep(delays[i]); // simulate a delay
+          } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+          }
+          i++;
         }
 
-        try {
-          Thread.sleep(delays[i]); // simulate a delay
-        } catch (InterruptedException e) {
-          throw new RuntimeException(e);
-        }
-        i++;
+        System.out.println("Closing socket...");
+      } catch (UnknownHostException e) {
+        System.err.println(
+            "NodeID: " + this.nodeID + ". Hostname " + this.hostname + " is unknown");
+      } catch (IOException e) {
+        e.printStackTrace();
       }
     }
   }
 
   public static void main(String[] args) {
+    //    createRandomEventStream(args);
     createDeterministicEventStream(args);
   }
 }
