@@ -6,7 +6,9 @@ import org.apache.flink.cep.pattern.conditions.SimpleCondition;
 import iron_maven.sources.AtomicEvent;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class Niceties {
 
@@ -33,6 +35,31 @@ public class Niceties {
       e.printStackTrace();
     }
     return port;
+  }
+
+  public static List<Integer> extractPorts(String[] args, int idx) {
+    assert args.length > 0 : "Specify at least one argument";
+    List<Integer> ports = new ArrayList<>();
+    String portsString = null;
+
+    try {
+      portsString = args[idx];
+    } catch (ArrayIndexOutOfBoundsException e) {
+      System.out.println("Specify at least one port");
+      System.exit(1);
+    }
+
+    try {
+      for (String port : portsString.split(",")) {
+        int portInt = Integer.parseInt(port);
+        assert (portInt >= 1024 && portInt <= 49151) : "Port should be between 1024 and 49151";
+        ports.add(portInt);
+      }
+    } catch (NumberFormatException e) {
+      System.out.println("Port must be a numher");
+      e.printStackTrace();
+    }
+    return ports;
   }
 
   public static int extractNodeNum(String[] args, int idx) {
