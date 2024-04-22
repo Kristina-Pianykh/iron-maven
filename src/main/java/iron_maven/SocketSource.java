@@ -35,36 +35,45 @@ public class SocketSource extends RichSourceFunction<AtomicEvent> {
   public void cancel() {}
 
   private static class ClientHandler extends Thread {
-    private Socket socket;
     private SourceContext<AtomicEvent> sourceContext;
+    private Socket socket;
 
     public ClientHandler(Socket socket, SourceContext<AtomicEvent> sourceContext) {
-      this.socket = socket;
       this.sourceContext = sourceContext;
+      this.socket = socket;
     }
 
     @Override
     public void run() {
-      try {
-        InputStream inputStream = socket.getInputStream();
-        ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
-        AtomicEvent event = (AtomicEvent) objectInputStream.readObject();
-        System.out.println("Receved event: " + event);
-
-        //        LocalTime now = LocalTime.now();
-        //        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-        //        String formattedTime = now.format(formatter);
-        //        System.out.println("[" + formattedTime + "] " + event.toString());
-
-        // put generated sensor data to the queue
-        sourceContext.collect(event);
-
-        socket.close(); // Close connection
+      try (DataInputStream inputStream = new DataInputStream(socket.getInputStream())) {
+        System.out.println(
+            "Socket for the connection: "
+                + socket.getInetAddress()
+                + ":"
+                + socket.getPort()
+                + " is open.");
+        while (true) {
+          try {
+            ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
+            AtomicEvent event = (AtomicEvent) objectInputStream.readObject();
+            System.out.println("Receved event: " + event);
+            // put generated sensor data to the queue
+            sourceContext.collect(event);
+          } catch (EOFException e) {
+            System.out.println("Client has closed the connection.");
+            break; // Exit the loop if EOFException is caught
+          } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+          }
+        }
       } catch (IOException e) {
-        e.printStackTrace(); // TODO: handle exception
-        System.exit(1);
-      } catch (ClassNotFoundException e) {
-        throw new RuntimeException(e);
+        e.printStackTrace();
+      } finally {
+        try {
+          socket.close();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
       }
     }
   }
