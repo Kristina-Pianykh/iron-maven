@@ -9,6 +9,7 @@ import org.apache.flink.cep.pattern.Pattern;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.util.Collector;
+import org.w3c.dom.Node;
 
 import java.util.List;
 import java.util.Map;
@@ -25,14 +26,20 @@ public class StreamingJob {
     assert patternNum >= 1 : "Pattern number must be a positive integer";
     System.out.println("Selected pattern: " + patternNum);
 
-    int hostPort = Niceties.extractPort(args, 1);
+    int nodeID = Niceties.extractNodeNum(args, 1);
+    assert nodeID > 0 : "Node ID is not set";
+
+    int hostPort = Niceties.extractPort(args, 2);
     assert hostPort > 0 : "Host Port is not set";
 
-    if (args.length >= 3) {
-      targetPort = Niceties.extractPort(args, 2);
+    if (args.length >= 4) {
+      targetPort = Niceties.extractPort(args, 3);
       System.out.println("Target port is set to " + targetPort);
+      NodeConfig nodeConfig =
+          new NodeConfig(String.valueOf(patternNum), nodeID, hostPort, targetPort);
+    } else {
+      NodeConfig nodeConfig = new NodeConfig(String.valueOf(patternNum), nodeID, hostPort);
     }
-    //    assert targetPort > 0 : "Target Port is not set";
 
     final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
