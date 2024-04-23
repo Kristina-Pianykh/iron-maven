@@ -10,11 +10,11 @@ public class CustomPatterns {
   static AfterMatchSkipStrategy skipStrategy = AfterMatchSkipStrategy.noSkip();
   static Time timeWindowSize = Time.milliseconds(4000);
 
-  public static Pattern<AtomicEvent, ?> getPattern(int patternNum) {
-    switch (patternNum) {
-      case 1:
+  public static Pattern<AtomicEvent, ?> getPattern(String patternID) {
+    switch (patternID) {
+      case "1":
         return CustomPatterns.getPattern1();
-      case 2:
+      case "2":
         return CustomPatterns.getPattern2();
     }
     return null;

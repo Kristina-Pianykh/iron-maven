@@ -9,37 +9,37 @@ import org.apache.flink.cep.pattern.Pattern;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.util.Collector;
-import org.w3c.dom.Node;
+import org.apache.flink.configuration.Configuration;
 
 import java.util.List;
 import java.util.Map;
 import java.util.HashSet;
 
 public class StreamingJob {
-  public static final String HOSTNAME = "localhost";
   public static HashSet<Integer> processedMatches = new HashSet<>();
 
   public static void main(String[] args) throws Exception {
-    int targetPort = -1;
+    Configuration nodeConfig = new Configuration();
 
-    int patternNum = Niceties.extractPatternNum(args, 0);
-    assert patternNum >= 1 : "Pattern number must be a positive integer";
-    System.out.println("Selected pattern: " + patternNum);
+    String patternID = Niceties.extractStrArg(args, 0);
+    nodeConfig.setString(NodeConf.PATTERN_ID, patternID);
+    System.out.println("Selected pattern: " + patternID);
 
-    int nodeID = Niceties.extractNodeNum(args, 1);
-    assert nodeID > 0 : "Node ID is not set";
+    String nodeID = Niceties.extractStrArg(args, 1);
+    nodeConfig.setString(NodeConf.NODE_ID, nodeID);
 
     int hostPort = Niceties.extractPort(args, 2);
     assert hostPort > 0 : "Host Port is not set";
+    nodeConfig.setInteger(NodeConf.HOST_PORT, hostPort);
 
-    if (args.length >= 4) {
-      targetPort = Niceties.extractPort(args, 3);
-      System.out.println("Target port is set to " + targetPort);
-      NodeConfig nodeConfig =
-          new NodeConfig(String.valueOf(patternNum), nodeID, hostPort, targetPort);
-    } else {
-      NodeConfig nodeConfig = new NodeConfig(String.valueOf(patternNum), nodeID, hostPort);
+    if (args.length == 4) {
+      //      String targetPorts = Niceties.extractStrArg(args, 3);
+      List<Integer> targetPorts = Niceties.extractPorts(args, 3);
+      nodeConfig.set(NodeConf.TARGET_PORTS, targetPorts);
+      System.out.println("Target ports are set to " + targetPorts);
     }
+
+    System.out.println("Initialized Node Config: " + nodeConfig.toString());
 
     final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
@@ -47,28 +47,11 @@ public class StreamingJob {
         env.addSource(new SocketSource(hostPort), "Socket Source")
             .assignTimestampsAndWatermarks(new CustomWatermarkStrategy());
 
-    Pattern<AtomicEvent, ?> pattern = CustomPatterns.getPattern(patternNum);
+    Pattern<AtomicEvent, ?> pattern =
+        CustomPatterns.getPattern(nodeConfig.get(NodeConf.PATTERN_ID));
 
     // Apply the pattern to the input stream
     PatternStream<AtomicEvent> patternStream = CEP.pattern(inputEventStream, pattern).inEventTime();
-
-    //    // Select matching patterns and print them
-    //    DataStream<String> matches =
-    //        patternStream.process(
-    //            new PatternProcessFunction<AtomicEvent, String>() {
-    //              @Override
-    //              public void processMatch(
-    //                  Map<String, List<AtomicEvent>> matches, Context ctx, Collector<String> out)
-    // {
-    //                out.collect(matches.toString());
-    //                //                AtomicEvent first = matches.get("first").get(0);
-    //                //                AtomicEvent second = matches.get("second").get(0);
-    //                //                out.collect("SEQ(A, C) detected: " + first.getType() + ", "
-    // +
-    //                // second.getType());
-    //              }
-    //            });
-    //    matches.print();
 
     // this is stupid. Just to convert PatternStream into DataStream
     DataStream<AtomicEvent> matches =
@@ -94,24 +77,12 @@ public class StreamingJob {
                 System.out.println("======================================\n");
               }
             });
-    //    matches.print();
-    //    DataStream<List<AtomicEvent>> matches =
-    //        patternStream.select(
-    //            new PatternSelectFunction<AtomicEvent, List<AtomicEvent>>() {
-    //              @Override
-    //              public List<AtomicEvent> select(Map<String, List<AtomicEvent>> pattern)
-    // {
-    //                AtomicEvent first = pattern.get("first").get(0);
-    //                AtomicEvent second = pattern.get("second").get(0);
-    //                List<AtomicEvent> partialMatches = new ArrayList<>();
-    //                partialMatches.add(first);
-    //                partialMatches.add(second);
-    //                return partialMatches;
-    //              }
-    //            });
-    if (targetPort > 0) {
-      matches.addSink(new SocketSink(HOSTNAME, targetPort));
+    System.out.println(NodeConf.shouldForward((nodeConfig)));
+    if (NodeConf.shouldForward(nodeConfig)) {
+      matches.addSink(new SocketSink(nodeConfig)).setParallelism(1);
     }
+    System.out.println(env.getExecutionPlan());
+    env.getExecutionPlan();
     env.execute("CEP Pattern Matching Job");
   }
 }

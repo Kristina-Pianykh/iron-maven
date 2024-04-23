@@ -45,7 +45,7 @@ public class SocketSource extends RichSourceFunction<AtomicEvent> {
 
     @Override
     public void run() {
-      try (DataInputStream inputStream = new DataInputStream(socket.getInputStream())) {
+      try (DataInputStream inputStream = new DataInputStream(this.socket.getInputStream())) {
         System.out.println(
             "Socket for the connection: "
                 + socket.getInetAddress()

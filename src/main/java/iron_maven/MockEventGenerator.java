@@ -17,11 +17,11 @@ public class MockEventGenerator {
     "A", "__________", "D", ">>>>>>>>>", "++++++++"
   };
 
-  public static AtomicEvent generateEvent(int nodeNum) {
+  public static AtomicEvent generateEvent(String nodeNum) {
     String[] eventTypes = {};
-    if (nodeNum == 1) {
+    if (nodeNum.equals("1")) {
       eventTypes = EVENT_TYPES_NODE1;
-    } else if (nodeNum == 2) {
+    } else if (nodeNum.equals("2")) {
       eventTypes = EVENT_TYPES_NODE2;
     } else {
       System.err.println("Invalid node number: " + nodeNum);
@@ -33,7 +33,7 @@ public class MockEventGenerator {
 
   public static void createRandomEventStream(String[] args) {
     int poolSize = 40;
-    int nodeNum = Niceties.extractNodeNum(args, 0);
+    String nodeNum = Niceties.extractStrArg(args, 0);
     int port = Niceties.extractPort(args, 1);
     System.out.printf("Sending events to node %d on port %d\n", nodeNum, port);
     // wait 3 sec for the cep engine to start
@@ -69,7 +69,7 @@ public class MockEventGenerator {
   public static void createDeterministicEventStream(String[] args) {
     String hostname = "localhost";
 
-    int nodeID = Niceties.extractNodeNum(args, 0);
+    String nodeID = Niceties.extractStrArg(args, 0);
     List<Integer> ports = Niceties.extractPorts(args, 1);
     System.out.println(ports);
 
@@ -92,10 +92,10 @@ public class MockEventGenerator {
     int nodeID;
     int port;
 
-    public PortSender(String hostname, int port, int nodeID) {
+    public PortSender(String hostname, int port, String nodeID) {
       this.hostname = hostname;
       this.port = port;
-      this.nodeID = nodeID;
+      this.nodeID = Integer.parseInt(nodeID);
     }
 
     @Override

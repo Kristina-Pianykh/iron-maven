@@ -12,16 +12,8 @@ import java.util.List;
 
 public class Niceties {
 
-  public static int extractPatternNum(String[] args, int idx) {
-    assert args.length > 0 : "Specify at least one argument";
-    int patternNum = -1;
-
-    try {
-      patternNum = Integer.parseInt(args[idx]);
-    } catch (NumberFormatException e) {
-      e.printStackTrace();
-    }
-    return patternNum;
+  public static String extractStrArg(String[] args, int idx) {
+    return args[idx];
   }
 
   public static int extractPort(String[] args, int idx) {
@@ -60,19 +52,6 @@ public class Niceties {
       e.printStackTrace();
     }
     return ports;
-  }
-
-  public static int extractNodeNum(String[] args, int idx) {
-    assert args.length > 0 : "Specify at least one argument";
-    int nodeNum = -1;
-
-    try {
-      nodeNum = Integer.parseInt(args[idx]);
-    } catch (NumberFormatException e) {
-      e.printStackTrace();
-      System.exit(-1);
-    }
-    return nodeNum;
   }
 
   public static String timestampToString(long timestamp) {

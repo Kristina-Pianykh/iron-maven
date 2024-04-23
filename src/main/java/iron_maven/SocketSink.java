@@ -1,48 +1,92 @@
 package iron_maven;
 
-import iron_maven.sources.AtomicEvent;
-
 import java.io.*;
 import java.net.*;
-
-import org.apache.flink.cep.CEP;
-import org.apache.flink.configuration.Configuration;
-import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
-import org.apache.flink.cep.PatternFlatSelectFunction;
-import org.apache.flink.cep.PatternStream;
-import org.apache.flink.cep.pattern.Pattern;
-import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.util.Collector;
-
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class SocketSink<AtomicEvent> extends RichSinkFunction<AtomicEvent> {
-  String hostname;
-  int port;
+import org.apache.flink.configuration.Configuration;
+import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 
-  public SocketSink(String hostname, int port) {
-    this.hostname = hostname;
-    this.port = port;
+public class SocketSink<AtomicEvent> extends RichSinkFunction<AtomicEvent> {
+  Configuration config;
+  Map<Integer, Socket> portSocketMap = new HashMap<>();
+  List<Integer> targetPorts;
+
+  public SocketSink(Configuration config) {
+    this.config = config;
+    this.targetPorts =
+        this.config.get(NodeConf.TARGET_PORTS); // TODO: identify nodes by map<NodeID,port>
+  }
+
+  public void openSocket(int port) {
+    String hostname = this.config.get(NodeConf.HOSTNAME);
+
+    try {
+      System.out.println(
+          "NodeID: "
+              + this.config.get(NodeConf.NODE_ID)
+              + " creating socket to connect to port "
+              + port);
+      this.portSocketMap.put(port, new Socket(hostname, port));
+      System.out.println(
+          "NodeID: "
+              + this.config.get(NodeConf.NODE_ID)
+              + " opened socket "
+              + this.portSocketMap.get(port));
+    } catch (UnknownHostException e) {
+      System.err.println(
+          "NodeID: "
+              + this.config.get(NodeConf.NODE_ID)
+              + ". Hostname "
+              + hostname
+              + " is unknown");
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 
   @Override
-  public void open(Configuration parameters) throws Exception {}
+  public void open(Configuration parameters) throws Exception {
+    for (Integer port : targetPorts) {
+      openSocket(port);
+    }
+  }
 
   @Override
-  public void close() throws Exception {}
+  public void close() throws Exception {
+    for (Socket socket : this.portSocketMap.values()) {
+      System.out.println(
+          "NodeID: "
+              + this.config.get(NodeConf.NODE_ID)
+              + ". Closing socket "
+              + socket.getInetAddress());
+      socket.close();
+    }
+  }
 
   @Override
   public void invoke(AtomicEvent value, Context ctx) throws Exception {
     try {
-      Socket socket = new Socket(this.hostname, this.port);
-      OutputStream outputStream = socket.getOutputStream();
-      ObjectOutputStream socketOutputStream = new ObjectOutputStream(outputStream);
-      socketOutputStream.writeObject(value);
-      //      socketOutputStream.writeUTF(value); // Send message to server
-      socketOutputStream.flush();
-      System.out.printf("Sent %s to the socket \n", value);
+      for (Integer port : this.targetPorts) {
+        Socket socket = this.portSocketMap.get(port);
+        OutputStream outputStream = socket.getOutputStream();
+        ObjectOutputStream socketOutputStream = new ObjectOutputStream(outputStream);
+        try {
+          socketOutputStream.writeObject(value);
+          socketOutputStream.flush(); // ??
+          System.out.printf("Sent %s to the socket \n", value);
+        } catch (SocketException e) {
+          System.err.println(
+              "NodeID: "
+                  + this.config.get(NodeConf.NODE_ID)
+                  + ", socket "
+                  + socket.getInetAddress()
+                  + " is closed by server");
+          openSocket(port);
+        }
+      }
     } catch (IOException e) {
       e.printStackTrace();
       System.out.println("Failed to send event to socket from result stream");

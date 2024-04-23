@@ -43,8 +43,7 @@ public class CustomWatermarkStrategy implements WatermarkStrategy<AtomicEvent> {
       // before
       //      long watermark = System.currentTimeMillis() - MAX_OUT_OF_ORDERNESS;
       long watermark = System.currentTimeMillis();
-      //      System.out.println("Emitting on event watermark: " +
-      // Niceties.timestampToString(watermark));
+      System.out.println("Emitting on event watermark: " + Niceties.timestampToString(watermark));
       output.emitWatermark(new Watermark(watermark));
       //      output.emitWatermark(new Watermark(eventTimestamp));
     }
