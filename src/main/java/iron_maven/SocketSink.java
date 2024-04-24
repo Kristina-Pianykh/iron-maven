@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import iron_maven.sources.AtomicEvent;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 
@@ -20,37 +21,13 @@ public class SocketSink<AtomicEvent> extends RichSinkFunction<AtomicEvent> {
         this.config.get(NodeConf.TARGET_PORTS); // TODO: identify nodes by map<NodeID,port>
   }
 
-  public void openSocket(int port) {
-    String hostname = this.config.get(NodeConf.HOSTNAME);
-
-    try {
-      System.out.println(
-          "NodeID: "
-              + this.config.get(NodeConf.NODE_ID)
-              + " creating socket to connect to port "
-              + port);
-      this.portSocketMap.put(port, new Socket(hostname, port));
-      System.out.println(
-          "NodeID: "
-              + this.config.get(NodeConf.NODE_ID)
-              + " opened socket "
-              + this.portSocketMap.get(port));
-    } catch (UnknownHostException e) {
-      System.err.println(
-          "NodeID: "
-              + this.config.get(NodeConf.NODE_ID)
-              + ". Hostname "
-              + hostname
-              + " is unknown");
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-  }
-
   @Override
   public void open(Configuration parameters) throws Exception {
+    String hostname = this.config.get(NodeConf.HOSTNAME);
+
     for (Integer port : targetPorts) {
-      openSocket(port);
+      Socket socket = Retry.openSocket(hostname, port);
+      this.portSocketMap.put(port, socket);
     }
   }
 
@@ -68,29 +45,38 @@ public class SocketSink<AtomicEvent> extends RichSinkFunction<AtomicEvent> {
 
   @Override
   public void invoke(AtomicEvent value, Context ctx) throws Exception {
-    try {
-      for (Integer port : this.targetPorts) {
+    final int MAX_RETRIES = 3; // can it lead to congestions and inconsistencies?
+    int numRetries = 0;
+
+    for (Integer port : this.targetPorts) {
+
+      while (numRetries < MAX_RETRIES) {
         Socket socket = this.portSocketMap.get(port);
-        OutputStream outputStream = socket.getOutputStream();
-        ObjectOutputStream socketOutputStream = new ObjectOutputStream(outputStream);
         try {
+          OutputStream outputStream = socket.getOutputStream();
+          ObjectOutputStream socketOutputStream = new ObjectOutputStream(outputStream);
           socketOutputStream.writeObject(value);
           socketOutputStream.flush(); // ??
           System.out.printf("Sent %s to the socket \n", value);
+          break;
         } catch (SocketException e) {
+          System.err.println("Failed to send " + value.toString());
           System.err.println(
-              "NodeID: "
-                  + this.config.get(NodeConf.NODE_ID)
-                  + ", socket "
-                  + socket.getInetAddress()
-                  + " is closed by server");
-          openSocket(port);
+              "Failed to connect to socket cause connection was closed by the server");
+          //        try {
+          //          sleepTime = (++numRetries * 1000) + threadRandom.nextLong(1, 1000);
+          //          Thread.sleep(sleepTime);
+          //        } catch (InterruptedException ex) {
+          //          System.err.println("Sleep interrupted");
+          //          throw new RuntimeException(ex); // replace? how to handle this one?
+          //        }
+          Socket newSocket = Retry.openSocket(this.config.get(NodeConf.HOSTNAME), port);
+          this.portSocketMap.put(port, newSocket);
+          numRetries++;
+        } catch (IOException e) {
+          e.printStackTrace();
         }
       }
-    } catch (IOException e) {
-      e.printStackTrace();
-      System.out.println("Failed to send event to socket from result stream");
-      System.exit(1);
     }
   }
 }
