@@ -5,11 +5,10 @@ import org.apache.flink.configuration.ConfigOptions;
 import org.apache.flink.configuration.Configuration;
 
 import java.util.List;
-import java.util.Set;
 
-public class NodeConfig {
+public class NodeConf {
 
-  public NodeConfig() {}
+  public NodeConf() {}
 
   public static final ConfigOption<Integer> HOST_PORT =
       ConfigOptions.key("hostPort").intType().noDefaultValue();

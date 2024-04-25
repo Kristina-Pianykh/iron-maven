@@ -111,9 +111,13 @@ public class MockEventGenerator {
       String[] eventTypes2 = new String[delays2.length];
       Arrays.fill(eventTypes2, "C");
 
-      int[] delays3 = {450, 1250, 700, 500};
+      int[] delays3 = {450, 250, 700, 500, 169, 480};
       String[] eventTypes3 = new String[delays3.length];
       Arrays.fill(eventTypes3, "A");
+
+      int[] delays4 = {750, 550, 150, 360, 700};
+      String[] eventTypes4 = new String[delays4.length];
+      Arrays.fill(eventTypes4, "D");
 
       if (this.nodeID == 1) {
         delays = delays1;
@@ -121,9 +125,12 @@ public class MockEventGenerator {
       } else if (this.nodeID == 2) {
         delays = delays2;
         eventTypes = eventTypes2;
-      } else {
+      } else if (this.nodeID == 3) {
         delays = delays3;
         eventTypes = eventTypes3;
+      } else {
+        delays = delays4;
+        eventTypes = eventTypes4;
       }
 
       int i = 0;
