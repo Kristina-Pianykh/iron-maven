@@ -3,16 +3,23 @@ package iron_maven.sources;
 import java.util.UUID;
 import java.lang.Object;
 import java.util.Objects;
-import java.util.List;
-import java.util.ArrayList;
 import java.io.Serializable;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class EventID implements Serializable {
-  private final UUID eventID = UUID.randomUUID();
+public class EventID {
+  private final UUID eventID;
   private final String nodeID;
+
+  @JsonCreator
+  public EventID(@JsonProperty("nodeID") String nodeID, @JsonProperty("eventID") UUID eventID) {
+    this.nodeID = nodeID;
+    this.eventID = eventID;
+  }
 
   public EventID(String nodeID) {
     this.nodeID = nodeID;
+    this.eventID = UUID.randomUUID();
   }
 
   public String getNodeID() {

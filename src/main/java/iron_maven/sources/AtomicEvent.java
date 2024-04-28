@@ -1,11 +1,27 @@
 package iron_maven.sources;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import iron_maven.Niceties;
 
 public class AtomicEvent extends Message {
-  private String type;
-  private long timestamp;
-  private EventID id;
+  private final String type;
+  private final long timestamp;
+  private final EventID id;
+
+  @JsonCreator
+  public AtomicEvent(
+      @JsonProperty("control") boolean control,
+      @JsonProperty("type") String type,
+      @JsonProperty("nodeID") String nodeId,
+      @JsonProperty("timestamp") long timestamp,
+      @JsonProperty("id") EventID id) {
+    super(control);
+    this.type = type;
+    this.timestamp = timestamp;
+    this.id = id;
+  }
 
   public AtomicEvent(String type, String nodeId) {
     super(false);
@@ -15,11 +31,11 @@ public class AtomicEvent extends Message {
   }
 
   public String getType() {
-    return type;
+    return this.type;
   }
 
   public long getTimestamp() {
-    return timestamp;
+    return this.timestamp;
   }
 
   public EventID getID() {

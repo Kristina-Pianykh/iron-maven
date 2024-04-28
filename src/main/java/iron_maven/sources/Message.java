@@ -1,12 +1,15 @@
 package iron_maven.sources;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.io.Serializable;
 
-public class Message implements Serializable {
-  private static final long serialVersionUID = 7L;
+public class Message {
   public boolean control;
 
-  public Message(boolean control) {
+  @JsonCreator
+  public Message(@JsonProperty("control") boolean control) {
     this.control = control;
   }
 }
