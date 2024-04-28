@@ -1,12 +1,13 @@
 package iron_maven;
 
 import iron_maven.sources.AtomicEvent;
+import iron_maven.sources.Message;
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction;
 
 import java.io.*;
 import java.net.*;
 
-public class SocketSource extends RichSourceFunction<AtomicEvent> {
+public class SocketSource extends RichSourceFunction<Message> {
   private String hostname = "localhost";
   private int port = 6666;
 
@@ -15,7 +16,7 @@ public class SocketSource extends RichSourceFunction<AtomicEvent> {
   }
 
   @Override
-  public void run(SourceContext<AtomicEvent> sourceContext) throws Exception {
+  public void run(SourceContext<Message> sourceContext) throws Exception {
     try (ServerSocket serverSocket = new ServerSocket(port)) {
       System.out.println(
           String.format("Server started. Listening for connections on port %d...", port));
@@ -35,10 +36,10 @@ public class SocketSource extends RichSourceFunction<AtomicEvent> {
   public void cancel() {}
 
   private static class ClientHandler extends Thread {
-    private SourceContext<AtomicEvent> sourceContext;
+    private SourceContext<Message> sourceContext;
     private Socket socket;
 
-    public ClientHandler(Socket socket, SourceContext<AtomicEvent> sourceContext) {
+    public ClientHandler(Socket socket, SourceContext<Message> sourceContext) {
       this.sourceContext = sourceContext;
       this.socket = socket;
     }

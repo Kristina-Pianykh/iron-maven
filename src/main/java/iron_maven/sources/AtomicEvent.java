@@ -1,15 +1,14 @@
 package iron_maven.sources;
 
-import java.io.Serializable;
 import iron_maven.Niceties;
 
-public class AtomicEvent implements Serializable {
-  private static final long serialVersionUID = 7L;
+public class AtomicEvent extends Message {
   private String type;
   private long timestamp;
   private EventID id;
 
   public AtomicEvent(String type, String nodeId) {
+    super(false);
     this.type = type;
     this.timestamp = System.currentTimeMillis();
     this.id = new EventID(nodeId);

@@ -1,7 +1,10 @@
 package iron_maven;
 
 import iron_maven.sources.AtomicEvent;
+import iron_maven.sources.ControlMessage;
+import iron_maven.sources.Message;
 
+import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.cep.CEP;
 import org.apache.flink.cep.PatternFlatSelectFunction;
 import org.apache.flink.cep.PatternStream;
@@ -43,15 +46,38 @@ public class StreamingJob {
 
     final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-    DataStream<AtomicEvent> inputEventStream =
+    DataStream<Message> inputStream =
         env.addSource(new SocketSource(hostPort), "Socket Source")
             .assignTimestampsAndWatermarks(new CustomWatermarkStrategy());
+
+    DataStream<ControlMessage> controlStream =
+        inputStream
+            .filter(
+                new FilterFunction<Message>() {
+                  @Override
+                  public boolean filter(Message value) throws Exception {
+                    return value.control;
+                  }
+                })
+            .map(item -> (ControlMessage) item);
+
+    DataStream<AtomicEvent> eventStream =
+        inputStream
+            .filter(
+                new FilterFunction<Message>() {
+                  @Override
+                  public boolean filter(Message value) throws Exception {
+                    return !value.control;
+                  }
+                })
+            .map(item -> (AtomicEvent) item);
 
     Pattern<AtomicEvent, ?> pattern =
         CustomPatterns.getPattern(nodeConfig.get(NodeConf.PATTERN_ID));
 
     // Apply the pattern to the input stream
-    PatternStream<AtomicEvent> patternStream = CEP.pattern(inputEventStream, pattern).inEventTime();
+    assert pattern != null : "Pattern is not set";
+    PatternStream<AtomicEvent> patternStream = CEP.pattern(eventStream, pattern).inEventTime();
 
     // this is stupid. Just to convert PatternStream into DataStream
     DataStream<AtomicEvent> matches =

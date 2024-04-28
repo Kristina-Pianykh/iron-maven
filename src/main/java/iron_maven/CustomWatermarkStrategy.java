@@ -1,42 +1,39 @@
 package iron_maven;
 
-import java.text.SimpleDateFormat;
 import java.time.Duration;
-import iron_maven.sources.AtomicEvent;
+import iron_maven.sources.Message;
 import org.apache.flink.api.common.eventtime.*;
 
 import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.apache.flink.util.Preconditions.checkNotNull;
-import java.util.Date;
-import java.text.SimpleDateFormat;
 
-public class CustomWatermarkStrategy implements WatermarkStrategy<AtomicEvent> {
+public class CustomWatermarkStrategy implements WatermarkStrategy<Message> {
   private static final long MAX_OUT_OF_ORDERNESS = 1000;
 
   @Override
-  public WatermarkGenerator<AtomicEvent> createWatermarkGenerator(
+  public WatermarkGenerator<Message> createWatermarkGenerator(
       WatermarkGeneratorSupplier.Context context) {
     return new CustomWatermarkGenerator();
     //    return new CustomBoundedOutOfOrderWatermark<>(Duration.ofMillis(300));
   }
 
   @Override
-  public TimestampAssigner<AtomicEvent> createTimestampAssigner(
+  public TimestampAssigner<Message> createTimestampAssigner(
       TimestampAssignerSupplier.Context context) {
     return new CustomTimestampAssigner(); // extract timestamp from the event
   }
 
-  public static class CustomTimestampAssigner implements TimestampAssigner<AtomicEvent> {
+  public static class CustomTimestampAssigner implements TimestampAssigner<Message> {
     @Override
-    public long extractTimestamp(AtomicEvent element, long recordTimestamp) {
+    public long extractTimestamp(Message element, long recordTimestamp) {
       return System.currentTimeMillis();
       //      return element.getTimestamp();
     }
   }
 
-  public static class CustomWatermarkGenerator implements WatermarkGenerator<AtomicEvent> {
+  public static class CustomWatermarkGenerator implements WatermarkGenerator<Message> {
     @Override
-    public void onEvent(AtomicEvent event, long eventTimestamp, WatermarkOutput output) {
+    public void onEvent(Message event, long eventTimestamp, WatermarkOutput output) {
       //      System.out.println("Event: " + event.toString());
       //      System.out.println("Event timestamp: " + eventTimestamp);
 
@@ -53,7 +50,8 @@ public class CustomWatermarkStrategy implements WatermarkStrategy<AtomicEvent> {
     public void onPeriodicEmit(WatermarkOutput output) {}
   }
 
-  public static class CustomBoundedOutOfOrderWatermark<Event> implements WatermarkGenerator<Event> {
+  public static class CustomBoundedOutOfOrderWatermark<Message>
+      implements WatermarkGenerator<Message> {
     /** The maximum timestamp encountered so far. */
     private long maxTimestamp;
 
@@ -71,16 +69,12 @@ public class CustomWatermarkStrategy implements WatermarkStrategy<AtomicEvent> {
     }
 
     @Override
-    public void onEvent(Event event, long eventTimestamp, WatermarkOutput output) {
+    public void onEvent(Message event, long eventTimestamp, WatermarkOutput output) {
       maxTimestamp = Math.max(maxTimestamp, eventTimestamp);
-      //      System.out.println("Max timestamp: " + maxTimestamp);
-      //      output.emitWatermark(new Watermark(eventTimestamp));
     }
 
     @Override
     public void onPeriodicEmit(WatermarkOutput output) {
-      //      System.out.println(
-      //          "Emitting periodic watermark: " + (maxTimestamp - outOfOrdernessMillis - 1));
       output.emitWatermark(new Watermark(maxTimestamp - outOfOrdernessMillis - 1));
     }
   }
