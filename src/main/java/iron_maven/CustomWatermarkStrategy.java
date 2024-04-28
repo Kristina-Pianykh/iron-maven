@@ -29,7 +29,8 @@ public class CustomWatermarkStrategy implements WatermarkStrategy<AtomicEvent> {
   public static class CustomTimestampAssigner implements TimestampAssigner<AtomicEvent> {
     @Override
     public long extractTimestamp(AtomicEvent element, long recordTimestamp) {
-      return element.getTimestamp();
+      return System.currentTimeMillis();
+      //      return element.getTimestamp();
     }
   }
 
