@@ -60,6 +60,7 @@ public class StreamingJob {
                   }
                 })
             .map(item -> (ControlMessage) item);
+    controlStream.print();
 
     DataStream<AtomicEvent> eventStream =
         inputStream

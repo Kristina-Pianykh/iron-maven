@@ -1,13 +1,20 @@
 package iron_maven;
 
 import iron_maven.sources.AtomicEvent;
+import iron_maven.sources.ControlMessage;
 import iron_maven.sources.Message;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction;
 
 import java.io.*;
 import java.net.*;
 
 public class SocketSource extends RichSourceFunction<Message> {
+  private volatile boolean isRunning = true;
   private String hostname = "localhost";
   private int port = 6666;
 
@@ -21,10 +28,9 @@ public class SocketSource extends RichSourceFunction<Message> {
       System.out.println(
           String.format("Server started. Listening for connections on port %d...", port));
 
-      while (true) {
+      while (this.isRunning) {
         Socket socket = serverSocket.accept();
         new ClientHandler(socket, sourceContext).start(); // Hand off to a new thread
-        //        Thread.sleep(1000); // 1000 comes from Flink lib
       }
     } catch (IOException e) {
       e.printStackTrace(); // TODO: handle exception
@@ -33,7 +39,9 @@ public class SocketSource extends RichSourceFunction<Message> {
   }
 
   @Override
-  public void cancel() {}
+  public void cancel() {
+    this.isRunning = false; // any sockets/readers to close?
+  }
 
   private static class ClientHandler extends Thread {
     private SourceContext<Message> sourceContext;
@@ -46,29 +54,37 @@ public class SocketSource extends RichSourceFunction<Message> {
 
     @Override
     public void run() {
-      try (DataInputStream inputStream = new DataInputStream(this.socket.getInputStream())) {
-        System.out.println(
-            "Socket for the connection: "
-                + socket.getInetAddress()
-                + ":"
-                + socket.getPort()
-                + " is open.");
-        while (true) {
+      ObjectMapper mapper = new ObjectMapper();
+      Message message = null;
+
+      try (BufferedReader reader =
+          new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+        System.out.println("Socket for the connection: " + socket.getInetAddress() + " is open.");
+        while (true) { // whi isRunning?
           try {
-            ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
-            AtomicEvent event = (AtomicEvent) objectInputStream.readObject();
-            System.out.println("Receved event: " + event);
-            // put generated sensor data to the queue
-            sourceContext.collect(event);
+
+            if (reader.ready()) {
+              System.out.println("reading");
+              String line = reader.readLine();
+              if (line != null) {
+                System.out.println(line);
+                try {
+                  message = mapper.readValue(line, ControlMessage.class);
+
+                } catch (UnrecognizedPropertyException e) {
+                  message = mapper.readValue(line, AtomicEvent.class);
+                }
+                System.out.println(message);
+                sourceContext.collect(message);
+              }
+            }
           } catch (EOFException e) {
             System.out.println("Client has closed the connection.");
             break; // Exit the loop if EOFException is caught
-          } catch (ClassNotFoundException e) {
-            e.printStackTrace();
           }
         }
-      } catch (IOException e) {
-        e.printStackTrace();
+      } catch (IOException ex) {
+        ex.printStackTrace();
       } finally {
         try {
           socket.close();

@@ -1,5 +1,7 @@
 package iron_maven;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import iron_maven.sources.AtomicEvent;
 
 import java.io.*;
@@ -52,23 +54,28 @@ public class MockEventGenerator {
       Random random = new Random(seed);
       LongStream longStream = random.longs(100, 4000);
 
-      try (Socket socket = new Socket(this.hostname, this.port)) {
+      try (Socket socket = new Socket(this.hostname, this.port);
+          BufferedWriter writer =
+              new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()))) {
+        ObjectMapper mapper = new ObjectMapper();
 
         longStream.forEach(
             delay -> {
-              ObjectOutputStream socketOutputStream = null;
-              try {
-                socketOutputStream = new ObjectOutputStream(socket.getOutputStream());
-              } catch (IOException e) {
-                throw new RuntimeException(e);
-              }
               AtomicEvent event = new AtomicEvent(this.eventType, String.valueOf(nodeID));
               System.out.println(event);
+              String jsonString = null;
               try {
-                socketOutputStream.writeObject(event); // Send message to server
+                jsonString = mapper.writeValueAsString(event);
+                writer.write(jsonString);
+                writer.flush(); // Make sure to flush to ensure all data is sent
+                writer.newLine();
+              } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
               } catch (IOException e) {
                 throw new RuntimeException(e);
               }
+              System.out.println(jsonString);
+              // Write JSON string to socket output stream
 
               try {
                 Thread.sleep(delay); // simulate a delay
@@ -77,6 +84,7 @@ public class MockEventGenerator {
               }
             });
 
+        System.out.println("Closing writer...");
         System.out.println("Closing socket...");
       } catch (UnknownHostException e) {
         System.err.println(
