@@ -3,6 +3,7 @@ package iron_maven.sources;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import iron_maven.Niceties;
 
 public class AtomicEvent extends Message {
@@ -42,7 +43,17 @@ public class AtomicEvent extends Message {
     return this.id;
   }
 
+  //  public String toString() {
+  //    return Niceties.timestampToString(this.timestamp) + this.type + " " + this.id.toString();
+  //  }
+
+  @Override
   public String toString() {
-    return Niceties.timestampToString(this.timestamp) + this.type + " " + this.id.toString();
+    ObjectMapper mapper = new ObjectMapper();
+    try {
+      return mapper.writeValueAsString(this);
+    } catch (Exception e) {
+      return super.toString();
+    }
   }
 }

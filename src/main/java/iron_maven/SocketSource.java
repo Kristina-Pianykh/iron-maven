@@ -8,12 +8,18 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
+import net.logstash.logback.argument.StructuredArguments;
+import static net.logstash.logback.argument.StructuredArguments.*;
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction;
 
 import java.io.*;
 import java.net.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SocketSource extends RichSourceFunction<Message> {
+  private static final Logger logger = LoggerFactory.getLogger(SocketSource.class);
+
   private volatile boolean isRunning = true;
   private String hostname = "localhost";
   private int port = 6666;
@@ -73,6 +79,11 @@ public class SocketSource extends RichSourceFunction<Message> {
 
                 } catch (UnrecognizedPropertyException e) {
                   message = mapper.readValue(line, AtomicEvent.class);
+                  //                  logger.info("Recieved", (AtomicEvent) message);
+                  logger.info(
+                      "Received event from NodeID {} with ID {}",
+                      keyValue("source_node_id", ((AtomicEvent) message).getID().getNodeID()),
+                      keyValue("event_id", ((AtomicEvent) message).getID().getEventID()));
                 }
                 System.out.println(message);
                 sourceContext.collect(message);

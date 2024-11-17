@@ -1,0 +1,49 @@
+<!--<?xml version="1.0" encoding="UTF-8"?>-->
+<!--<!DOCTYPE configuration>-->
+
+<!--<configuration>-->
+<!--    <appender name="LOKI" class="com.github.loki4j.logback.Loki4jAppender">-->
+<!--        <verbose>true</verbose>-->
+<!--        <batchMaxItems>1</batchMaxItems>-->
+<!--        <http>-->
+<!--            <url>http://localhost:3100/loki/api/v1/push</url>-->
+<!--        </http>-->
+<!--        <format>-->
+<!--            <label>-->
+<!--                <pattern>app=my-app,host=${HOSTNAME}</pattern>-->
+<!--            </label>-->
+<!--            &lt;!&ndash;            <message class="com.github.loki4j.logback.JsonLayout">&ndash;&gt;-->
+<!--            <loggerName>-->
+<!--                <enabled>false</enabled>-->
+<!--            </loggerName>-->
+<!--            <customProvider class="iron_maven.sources.logging.CustomJsonProvider"/>-->
+<!--            &lt;!&ndash;                <customProvider class="iron_maven.sources.logging.NodeIDJsonProvider"/>&ndash;&gt;-->
+<!--            &lt;!&ndash;            </message>&ndash;&gt;-->
+<!--            &lt;!&ndash;            <message>&ndash;&gt;-->
+<!--            &lt;!&ndash;                <pattern>%-5level [%.5(${HOSTNAME})] %.10thread %logger{20} | %msg %ex</pattern>&ndash;&gt;-->
+<!--            &lt;!&ndash;            </message>&ndash;&gt;-->
+<!--        </format>-->
+<!--    </appender>-->
+
+
+<!--    <import class="ch.qos.logback.classic.encoder.PatternLayoutEncoder"/>-->
+<!--    <import class="ch.qos.logback.core.ConsoleAppender"/>-->
+
+<!--    <appender name="STDOUT" class="ConsoleAppender">-->
+<!--        <encoder class="net.logstash.logback.encoder.LogstashEncoder">-->
+<!--            <includeCallerData>true</includeCallerData>-->
+<!--            &lt;!&ndash;            <jsonGeneratorDecorator class="net.logstash.logback.decorate.CompositeJsonGeneratorDecorator">&ndash;&gt;-->
+<!--            &lt;!&ndash;                <decorator class="net.logstash.logback.decorate.PrettyPrintingJsonGeneratorDecorator"/>&ndash;&gt;-->
+<!--            &lt;!&ndash;            </jsonGeneratorDecorator>&ndash;&gt;-->
+<!--        </encoder>-->
+<!--        &lt;!&ndash;        <encoder class="PatternLayoutEncoder">&ndash;&gt;-->
+<!--        &lt;!&ndash;            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} &#45;&#45; %msg%n</pattern>&ndash;&gt;-->
+<!--        &lt;!&ndash;        </encoder>&ndash;&gt;-->
+<!--    </appender>-->
+
+<!--    <root level="info">-->
+<!--        &lt;!&ndash;    <root level="debug">&ndash;&gt;-->
+<!--        <appender-ref ref="LOKI"/>-->
+<!--        <appender-ref ref="STDOUT"/>-->
+<!--    </root>-->
+<!--</configuration>-->

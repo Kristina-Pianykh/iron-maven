@@ -10,14 +10,19 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.LongStream;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 public class MockEventGenerator {
+  private static final Logger logger = LoggerFactory.getLogger(MockEventGenerator.class);
 
   public static void createEventStream(String[] args) {
     String hostname = "localhost";
 
     String nodeID = Niceties.extractStrArg(args, 0);
     List<Integer> ports = Niceties.extractPorts(args, 1);
-    System.out.println(ports);
+    logger.atInfo().setMessage("target port(s)").addKeyValue("ports", ports).log();
+    //    System.out.println(ports);
 
     try {
       Thread.sleep(3000);

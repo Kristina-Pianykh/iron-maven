@@ -13,10 +13,14 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.util.Collector;
 import org.apache.flink.configuration.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import net.logstash.logback.decorate.CompositeJsonGeneratorDecorator;
 // import com.github.loki4j.logback.Loki4jAppender;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashSet;
@@ -25,7 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
 public class StreamingJob {
-  private static final Logger logger = LoggerFactory.getLogger(StreamingJob.class);
+  //  private static final Logger logger = LoggerFactory.getLogger(StreamingJob.class);
 
   public static HashSet<Integer> processedMatches = new HashSet<>();
 
@@ -34,7 +38,7 @@ public class StreamingJob {
 
     String patternID = Niceties.extractStrArg(args, 0);
     nodeConfig.setString(NodeConf.PATTERN_ID, patternID);
-    logger.info("Selected patter: {}", patternID);
+    //    logger.info("Selected patter: {}", patternID);
     //    System.out.println("Selected pattern: " + patternID);
 
     String nodeID = Niceties.extractStrArg(args, 1);
@@ -49,10 +53,10 @@ public class StreamingJob {
       List<Integer> targetPorts = Niceties.extractPorts(args, 3);
       nodeConfig.set(NodeConf.TARGET_PORTS, targetPorts);
       //      System.out.println("Target ports are set to " + targetPorts);
-      logger.info("Target ports are set to {}", targetPorts);
+      //      logger.info("Target ports are set to {}", targetPorts);
     }
 
-    logger.info("Initialized Node Config: {}", nodeConfig);
+    //    logger.info("Initialized Node Config: {}", nodeConfig);
     //    System.out.println("Initialized Node Config: " + nodeConfig.toString());
 
     final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -84,48 +88,77 @@ public class StreamingJob {
                 })
             .map(item -> (AtomicEvent) item);
 
-    Pattern<AtomicEvent, ?> pattern =
-        CustomPatterns.getPattern(nodeConfig.get(NodeConf.PATTERN_ID));
+    ArrayList<Pattern<AtomicEvent, ?>> patterns = new ArrayList<>();
+
+    Pattern<AtomicEvent, ?> pattern1 = CustomPatterns.getPattern("1");
+    Pattern<AtomicEvent, ?> pattern2 = CustomPatterns.getPattern("2");
+    patterns.add(pattern1);
+    patterns.add(pattern2);
 
     // Apply the pattern to the input stream
-    assert pattern != null : "Pattern is not set";
-    PatternStream<AtomicEvent> patternStream = CEP.pattern(eventStream, pattern).inEventTime();
+    //    assert pattern != null : "Pattern is not set";
+    for (Pattern<AtomicEvent, ?> pattern : patterns) {
+      PatternStream<AtomicEvent> patternStream = CEP.pattern(eventStream, pattern).inEventTime();
 
-    // this is stupid. Just to convert PatternStream into DataStream
-    DataStream<AtomicEvent> matches =
-        patternStream.flatSelect(
-            new PatternFlatSelectFunction<AtomicEvent, AtomicEvent>() {
-              @Override
-              public void flatSelect(
-                  Map<String, List<AtomicEvent>> map, Collector<AtomicEvent> collector)
-                  throws Exception {
-                System.out.println("\n======================================");
-                for (String key : map.keySet()) {
-                  List<AtomicEvent> values = map.get(key);
-                  logger.info(String.format("%s: %s", key, values.toString()));
-                  //                  System.out.println(key + ": " + values);
-                  for (AtomicEvent event : values) {
-                    Integer hashedEvent = event.hashCode();
-                    if (!processedMatches.contains(hashedEvent)) {
-                      //                      System.out.println("Sending event: " +
-                      // event.toString());
-                      processedMatches.add(hashedEvent);
-                      logger.info("Sending event: {}", event.toString());
-                      collector.collect(event);
+      // this is stupid. Just to convert PatternStream into DataStream
+      DataStream<AtomicEvent> matches =
+          patternStream.flatSelect(
+              new PatternFlatSelectFunction<AtomicEvent, AtomicEvent>() {
+                @Override
+                public void flatSelect(
+                    Map<String, List<AtomicEvent>> map, Collector<AtomicEvent> collector)
+                    throws Exception {
+
+                  System.out.println("\n======================================");
+                  System.out.println(
+                      "====================================== MATCH ======================================");
+                  for (String key : map.keySet()) {
+                    List<AtomicEvent> values = map.get(key);
+                    //                    logger.info(String.format("%s: %s", key,
+                    // values.toString()));
+                    //                  System.out.println(key + ": " + values);
+                    System.out.println(key + ": " + values.toString());
+                    for (AtomicEvent event : values) {
+                      Integer hashedEvent = event.hashCode();
+                      if (!processedMatches.contains(hashedEvent)) {
+                        //                        System.out.println("Sending event: " +
+                        // event.toString());
+                        processedMatches.add(hashedEvent);
+                        //                        logger.info("Sending event: {}",
+                        // event.toString());
+                        collector.collect(event);
+                      }
                     }
                   }
+                  System.out.println("======================================\n");
                 }
-                System.out.println("======================================\n");
-              }
-            });
-    logger.info("The Node should forward: {}", NodeConf.shouldForward((nodeConfig)));
-    //    System.out.println(NodeConf.shouldForward((nodeConfig)));
-    if (NodeConf.shouldForward(nodeConfig)) {
-      matches.addSink(new SocketSink(nodeConfig)).setParallelism(1);
+              });
+
+      //      logger.info("The Node should forward: {}", NodeConf.shouldForward((nodeConfig)));
+      //    System.out.println(NodeConf.shouldForward((nodeConfig)));
+      if (NodeConf.shouldForward(nodeConfig)) {
+        matches.addSink(new SocketSink(nodeConfig)).setParallelism(1);
+      }
     }
-    logger.info(env.getExecutionPlan());
+
     //    System.out.println(env.getExecutionPlan());
     env.getExecutionPlan();
     env.execute("CEP Pattern Matching Job");
+
+    final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    Runnable task =
+        () -> {
+          patterns.remove(1);
+          System.out.println("\n+++++++++++++++++++++++++++++++++++++\n");
+          System.out.println("\n+++++++++++++++++++++++++++++++++++++\n");
+          System.out.println("\n+++++++++++++++++++++++++++++++++++++\n");
+          System.out.println("    REMOVED PATTERN 2     ");
+          System.out.println("\n+++++++++++++++++++++++++++++++++++++\n");
+          System.out.println("\n+++++++++++++++++++++++++++++++++++++\n");
+          System.out.println("\n+++++++++++++++++++++++++++++++++++++\n");
+        };
+    scheduler.schedule(task, 12, TimeUnit.SECONDS);
+
+    scheduler.shutdown();
   }
 }
